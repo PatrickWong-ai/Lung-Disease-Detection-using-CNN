@@ -4,9 +4,9 @@ import torch
 from torchvision import transforms, models
 import torch.nn as nn
 from PIL import Image
-import gdown
+import gdown  # For downloading from Google Drive
 
-# Set device
+# Set device to CPU
 device = torch.device("cpu")
 
 # Model weights path and URL
@@ -17,21 +17,28 @@ weights_url = "https://drive.google.com/uc?id=1QWb3w9u2eYPqWFPjSiXSdysnEjvyVG-n"
 if not os.path.exists(MODEL_PATH):
     gdown.download(weights_url, MODEL_PATH, quiet=False)
 
-# Load model
+# Load the model
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-model.fc = nn.Linear(model.fc.in_features, 5)
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
+model.fc = nn.Linear(model.fc.in_features, 5)  # Adjust for 5 classes
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
 model.eval()
 
-# Image transformation
+# Define image transformations
+image_size = 224 
+
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.RandomRotation(5),  # Minimal rotation
+    transforms.RandomAffine(degrees=0, translate=(0.05, 0.05)),  # Small translation
+    transforms.Resize((image_size, image_size)),  # Fixed size
+    transforms.RandomResizedCrop(image_size, scale=(0.9, 1.0)),  # Random crop with scale limit
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    transforms.Normalize(mean=[0.5], std=[0.5])  # Standard normalization for grayscale
 ])
 
 # Streamlit UI
 st.title("Lung Disease Detection")
+st.write("Upload a chest X-ray image to classify lung disease.")
+
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
@@ -42,8 +49,7 @@ if uploaded_file:
 
     with torch.no_grad():
         output = model(input_image)
-        pred_class = torch.argmax(output).item()
-        probs = torch.softmax(output, dim=1).cpu().numpy()
+        pred_class = torch.argmax(output, dim=1).item()
 
-    st.write(f"Probabilities: {probs}")
-    st.write(f"Predicted Class: **{['Normal','COVID', 'Pneumonia', 'Pneumothorax', 'Tuberculosis'][pred_class]}**")
+    class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
+    st.write(f"Predicted Class: **{class_names[pred_class]}**")
