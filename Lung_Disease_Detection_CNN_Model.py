@@ -16,34 +16,33 @@ print(f"Using device: {device}")
 
 # Configurations
 image_size = 224
-batch_size = 32
+batch_size = 64
 num_workers = 0
-learning_rate = 1e-3
+learning_rate = 1e-4
 num_epochs = 20
 unfreeze_epoch = 5
 class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
 
 # Define transformations
 train_transform = transforms.Compose([
-    transforms.RandomRotation(5),  # Minimal rotation
-    transforms.RandomAffine(degrees=0, translate=(0.05, 0.05)),  # Small translation
+    transforms.RandomRotation(15),  # Increased rotation for more variability
+    transforms.RandomAffine(degrees=0, translate=(0.15, 0.15)),  # Larger translation
     transforms.Resize((image_size, image_size)),  # Fixed size
-    transforms.RandomResizedCrop(image_size, scale=(0.9, 1.0)),  # Random crop with scale limit
+    transforms.RandomResizedCrop(image_size, scale=(0.7, 1.0)),  # Larger random crop
+    transforms.RandomHorizontalFlip(p=0.5),  # Horizontal flip
+    transforms.ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.2),  # Stronger color jitter
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])  # Standard normalization for grayscale
 ])
 
 test_transform = transforms.Compose([
-    transforms.RandomRotation(5),  # Small rotation
-    transforms.RandomAffine(degrees=0, translate=(0.05, 0.05)),  # Small translation
-    transforms.RandomHorizontalFlip(p=0.5),  # Random horizontal flip
     transforms.Resize((image_size, image_size)),  # Resize to model input size
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5], std=[0.5])  # Normalize for grayscale images
 ])
 
 # Dataset paths
-dir = 'C:\\Lung Disease\\data'
+dir = 'C:\\Users\\patrick\\Desktop\\Lung Disease\\data'
 print("Loading full dataset...")
 full_dataset = datasets.ImageFolder(dir, transform=train_transform)
 
@@ -62,22 +61,23 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_w
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
 
 # Load model and apply Dropout
-print("Loading pre-trained ResNet50 model...")
-model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+print("Loading pre-trained ResNet101 model...")
+model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
 model.fc = nn.Sequential(
-    nn.Dropout(0.5),
-    nn.Linear(model.fc.in_features, 5)  # 5 classes
+    nn.Dropout(0.4),  # Increased dropout to 0.7
+    nn.Linear(model.fc.in_features, 5)
 )
 model = model.to(device)
 
-# Define loss and optimizer with weight decay
+# Define loss function
 criterion = nn.CrossEntropyLoss()
+
+# Define optimizer with weight decay and adjusted learning rate
 optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), 
-                       lr=learning_rate, weight_decay=1e-3)
+                       lr=learning_rate, weight_decay=1e-5)  # Increased weight decay
 
-# Adjust learning rate scheduler to reduce based on validation loss (minimization)
-scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=3)
-
+# Adjust the learning rate scheduler to decay sooner
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=2, verbose=True)
 
 # Lists to store training and validation losses and accuracies
 train_losses = []
@@ -158,14 +158,6 @@ for epoch in range(num_epochs):
 
     # Step the scheduler with validation loss (minimization)
     scheduler.step(average_val_loss)
-
-    # Unfreeze deeper layers after the specified number of epochs
-    if epoch + 1 == unfreeze_epoch:
-        print(f"Unfreezing deeper layers at epoch {unfreeze_epoch}...")
-        for name, param in model.named_parameters():
-            if 'layer4' in name or 'fc' in name:
-                param.requires_grad = True
-        optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=learning_rate)
 
 # Test set evaluation
 model.eval()
@@ -250,5 +242,5 @@ plt.xticks(rotation=45)
 plt.show()
 
 # Save the model
-MODEL_SAVE_PATH = 'resnet50_lung_model.pth'
+MODEL_SAVE_PATH = 'resnet101_lung_model.pth'
 torch.save(model.state_dict(), MODEL_SAVE_PATH)
