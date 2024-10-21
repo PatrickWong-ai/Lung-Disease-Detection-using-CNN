@@ -11,7 +11,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Model weights path and URL
 MODEL_PATH = 'resnet101_lung_model.pth'
-weights_url = "https://drive.google.com/uc?id=1i9D0BURrD_mlRnpmdM234PMWpFBxmMkX"  # Update URL for direct download
+weights_url = "https://drive.google.com/uc?id=1i9D0BURrD_mlRnpmdM234PMWpFBxmMkX"  # Direct download URL
 
 # Download weights from Google Drive if not found locally
 if not os.path.exists(MODEL_PATH):
@@ -30,9 +30,9 @@ model.fc = nn.Sequential(
 )
 model = model.to(device)
 
-# Load custom weights
+# Load custom weights safely
 try:
-    state_dict = torch.load(MODEL_PATH, map_location=device)
+    state_dict = torch.load(MODEL_PATH, map_location=device, weights_only=True)  # Safe loading
     model.load_state_dict(state_dict, strict=False)
     model.eval()  # Set model to evaluation mode
 except Exception as e:
