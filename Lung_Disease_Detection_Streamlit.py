@@ -69,6 +69,17 @@ with torch.no_grad():
     probs = torch.softmax(output, dim=1).cpu().numpy()[0]  # Convert to NumPy array
     pred_class = torch.argmax(output, dim=1).item()
 
+confidence_threshold = 50.0  # Set threshold to 50%
+
+# Get max probability and corresponding class
+max_prob = probs[pred_class] * 100
+
+if max_prob < confidence_threshold:
+    st.write(f"Model is uncertain with a maximum confidence of {max_prob:.2f}%.")
+else:
+    st.write(f"Predicted Class: **{class_names[pred_class]}**")
+    st.write(f"Confidence: {max_prob:.2f}%")
+
 # Define class names
 class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
 
