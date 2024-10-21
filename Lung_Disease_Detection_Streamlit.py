@@ -4,7 +4,7 @@ import torch
 from torchvision import transforms, models
 import torch.nn as nn
 from PIL import Image
-import gdown  # For downloading from Google Drive
+import gdown
 
 # Set device to CPU
 device = torch.device("cpu")
@@ -20,11 +20,15 @@ if not os.path.exists(MODEL_PATH):
 # Load the model
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 model.fc = nn.Linear(model.fc.in_features, 5)  # Adjust for 5 classes
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
-model.eval()
+try:
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
+    model.eval()
+except Exception as e:
+    st.error(f"Error loading model weights: {e}")
+    st.stop()
 
 # Define image transformations
-image_size = 224 
+image_size = 224
 
 transform = transforms.Compose([
     transforms.RandomRotation(5),  # Minimal rotation
@@ -37,8 +41,6 @@ transform = transforms.Compose([
 
 # Streamlit UI
 st.title("Lung Disease Detection")
-st.write("Upload a chest X-ray image to classify lung disease.")
-
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
@@ -49,6 +51,9 @@ if uploaded_file:
 
     with torch.no_grad():
         output = model(input_image)
+        st.write(f"Model output (logits): {output.cpu().numpy()}")  # Debugging line
+        probs = torch.softmax(output, dim=1)
+        st.write(f"Probabilities: {probs.cpu().numpy()}")  # Debugging line
         pred_class = torch.argmax(output, dim=1).item()
 
     class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
