@@ -64,14 +64,17 @@ if uploaded_file:
     input_image = transform(image).unsqueeze(0).to(device)
 
     # Perform inference
-    with torch.no_grad():
-        output = model(input_image)
-        probs = torch.softmax(output, dim=1)
-        pred_class = torch.argmax(probs, dim=1).item()
+with torch.no_grad():
+    output = model(input_image)
+    probs = torch.softmax(output, dim=1).cpu().numpy()[0]  # Convert to NumPy array
+    pred_class = torch.argmax(output, dim=1).item()
 
-    # Define class names
-    class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
-    
-    # Display the results
-    st.write(f"Predicted Class: **{class_names[pred_class]}**")
-    st.write(f"Probabilities: {probs.cpu().numpy()}")
+# Define class names
+class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
+
+# Format probabilities as percentages
+formatted_probs = [f"{p * 100:.2f}%" for p in probs]
+
+# Display the results
+st.write(f"Predicted Class: **{class_names[pred_class]}**")
+st.write(f"Probabilities: {formatted_probs}")
