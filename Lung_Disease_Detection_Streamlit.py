@@ -20,7 +20,7 @@ if not os.path.exists(MODEL_PATH):
 # Load the model
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
 model.fc = nn.Linear(model.fc.in_features, 5)  # Adjust for 5 classes
-model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
 model.eval()
 
 # Define image transformations
