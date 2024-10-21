@@ -7,7 +7,7 @@ from PIL import Image
 import gdown
 
 # Set device to CPU
-device = torch.device("cpu")
+device = torch.device("cuda")
 
 # Model weights path and URL
 MODEL_PATH = 'resnet50_lung_model.pth'
