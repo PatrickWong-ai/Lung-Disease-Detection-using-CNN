@@ -31,7 +31,7 @@ model.fc = nn.Sequential(
 
 # Load the model weights
 try:
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device), strict=False)
     model.eval()
 except Exception as e:
     st.error(f"Error loading model: {e}")
@@ -58,6 +58,8 @@ if uploaded_file:
 
     with torch.no_grad():
         output = model(input_image)
+        probs = torch.softmax(output, dim=1)
+        st.write(f"Probabilities: {probs.cpu().numpy()}")
         pred_class = torch.argmax(output, dim=1).item()
 
     st.write(f"Predicted Class: **{['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis'][pred_class]}**")
