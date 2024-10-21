@@ -10,8 +10,8 @@ import gdown
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Model weights path and URL
-MODEL_PATH = 'resnet50_lung_model.pth'
-weights_url = "https://drive.google.com/uc?id=1QWb3w9u2eYPqWFPjSiXSdysnEjvyVG-n"
+MODEL_PATH = 'resnet101_lung_model.pth'
+weights_url = "https://drive.google.com/uc?id=1i9D0BURrD_mlRnpmdM234PMWpFBxmMkX"  # Update URL for direct download
 
 # Download weights from Google Drive if not found locally
 if not os.path.exists(MODEL_PATH):
@@ -48,6 +48,9 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.485, 0.485], std=[0.229, 0.229, 0.229])  # Normalization for ResNet
 ])
 
+# Define class names
+class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
+
 # Streamlit UI
 st.title("Lung Disease Detection using ResNet50")
 st.write("Upload a chest X-ray image to detect lung disease.")
@@ -64,28 +67,26 @@ if uploaded_file:
     input_image = transform(image).unsqueeze(0).to(device)
 
     # Perform inference
-with torch.no_grad():
-    output = model(input_image)
-    probs = torch.softmax(output, dim=1).cpu().numpy()[0]  # Convert to NumPy array
-    pred_class = torch.argmax(output, dim=1).item()
+    with torch.no_grad():
+        output = model(input_image)
+        probs = torch.softmax(output, dim=1).cpu().numpy()[0]  # Convert to NumPy array
+        pred_class = torch.argmax(output, dim=1).item()
 
-confidence_threshold = 50.0  # Set threshold to 50%
+    confidence_threshold = 50.0  # Set threshold to 50%
 
-# Get max probability and corresponding class
-max_prob = probs[pred_class] * 100
+    # Get max probability and corresponding class
+    max_prob = probs[pred_class] * 100
 
-if max_prob < confidence_threshold:
-    st.write(f"Model is uncertain with a maximum confidence of {max_prob:.2f}%.")
-else:
-    st.write(f"Predicted Class: **{class_names[pred_class]}**")
-    st.write(f"Confidence: {max_prob:.2f}%")
+    if max_prob < confidence_threshold:
+        st.write(f"Model is uncertain with a maximum confidence of {max_prob:.2f}%.")
+    else:
+        st.write(f"Predicted Class: **{class_names[pred_class]}**")
+        st.write(f"Confidence: {max_prob:.2f}%")
 
-# Define class names
-class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
+    # Format probabilities as percentages with corresponding class names
+    formatted_probs = {class_names[i]: f"{probs[i] * 100:.2f}%" for i in range(num_classes)}
 
-# Format probabilities as percentages
-formatted_probs = [f"{p * 100:.2f}%" for p in probs]
-
-# Display the results
-st.write(f"Predicted Class: **{class_names[pred_class]}**")
-st.write(f"Probabilities: {formatted_probs}")
+    # Display the results
+    st.write("Class Probabilities:")
+    for class_name, prob in formatted_probs.items():
+        st.write(f"{class_name}: {prob}")
