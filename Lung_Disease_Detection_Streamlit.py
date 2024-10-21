@@ -4,7 +4,7 @@ import torch
 from torchvision import transforms, models
 import torch.nn as nn
 from PIL import Image
-import gdown  # Import gdown for Google Drive download
+import gdown
 
 # Set device to CPU for Streamlit Cloud deployment
 device = torch.device("cpu")
@@ -22,9 +22,14 @@ if not os.path.exists(MODEL_PATH):
         st.error(f"Failed to download model weights: {e}")
         st.stop()
 
-# Load the model and weights
+# Adjust model architecture to match the saved weights
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
-model.fc = nn.Linear(model.fc.in_features, 5)
+model.fc = nn.Sequential(
+    nn.Dropout(0.5),  # Include if the model was trained with dropout
+    nn.Linear(model.fc.in_features, 5)
+)
+
+# Load the model weights
 try:
     model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
     model.eval()
@@ -32,7 +37,7 @@ except Exception as e:
     st.error(f"Error loading model: {e}")
     st.stop()
 
-# Define transformations
+# Define image transformations
 test_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
