@@ -20,12 +20,20 @@ if not os.path.exists(MODEL_PATH):
 
 # Load ResNet50 architecture and replace the final layer
 model = models.resnet50(weights=None)  # No pre-trained weights
-model.fc = nn.Linear(model.fc.in_features, 5)  # Adjust for 5 classes
+
+# Adjust the fully connected layer to match the state dict
+num_classes = 5  # Adjust for your use case
+model.fc = nn.Sequential(
+    nn.Linear(model.fc.in_features, 512),  # Add an intermediate layer if required
+    nn.ReLU(),
+    nn.Linear(512, num_classes)
+)
 model = model.to(device)
 
 # Load custom weights
 try:
-    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    state_dict = torch.load(MODEL_PATH, map_location=device)
+    model.load_state_dict(state_dict, strict=False)
     model.eval()  # Set model to evaluation mode
 except Exception as e:
     st.error(f"Error loading model weights: {e}")
@@ -48,7 +56,7 @@ st.write("Upload a chest X-ray image to detect lung disease.")
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file:
-    # Open the uploaded image and convert to RGB (for compatibility)
+    # Open the uploaded image and convert to grayscale
     image = Image.open(uploaded_file).convert("L")  # Load as grayscale
     st.image(image, caption="Uploaded Image", use_column_width=True)
 
