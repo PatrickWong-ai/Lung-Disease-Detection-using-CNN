@@ -6,16 +6,12 @@ import torch.nn as nn
 from PIL import Image
 import gdown
 
-# Set device to CPU
+# Set device to GPU
 device = torch.device("cuda")
 
 # Model weights path and URL
 MODEL_PATH = 'resnet50_lung_model.pth'
 weights_url = "https://drive.google.com/uc?id=1QWb3w9u2eYPqWFPjSiXSdysnEjvyVG-n"
-
-# Download weights if not found
-if not os.path.exists(MODEL_PATH):
-    gdown.download(weights_url, MODEL_PATH, quiet=False)
 
 # Load the model
 model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
@@ -26,6 +22,10 @@ try:
 except Exception as e:
     st.error(f"Error loading model weights: {e}")
     st.stop()
+
+# Download weights if not found
+if not os.path.exists(MODEL_PATH):
+    gdown.download(weights_url, MODEL_PATH, quiet=False)
 
 # Define image transformations
 image_size = 224
