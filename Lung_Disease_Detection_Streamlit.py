@@ -62,4 +62,4 @@ if uploaded_file:
         st.write(f"Probabilities: {probs.cpu().numpy()}")
         pred_class = torch.argmax(output, dim=1).item()
 
-    st.write(f"Predicted Class: **{['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis'][pred_class]}**")
+    st.write(f"Predicted Class: **{['Normal','COVID', 'Pneumonia', 'Pneumothorax', 'Tuberculosis'][pred_class]}**")
