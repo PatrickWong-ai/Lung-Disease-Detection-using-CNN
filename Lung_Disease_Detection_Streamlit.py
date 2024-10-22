@@ -52,7 +52,7 @@ transform = transforms.Compose([
 class_names = ['COVID', 'Normal', 'Pneumonia', 'Pneumothorax', 'Tuberculosis']
 
 # Streamlit UI
-st.title("Lung Disease Detection using ResNet50")
+st.title("Lung Disease Detection using ResNet101")
 st.write("Upload a chest X-ray image to detect lung disease.")
 
 # File uploader for image input
